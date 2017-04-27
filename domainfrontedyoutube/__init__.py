@@ -6,7 +6,6 @@ import os
 
 savedir = "~/Videos"
 
-savedir_full = os.path.expanduser(savedir)
 
 
 globalheaders = {"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0"}
@@ -50,42 +49,47 @@ def openFrontedURL(fronted_url):
     res = ur.urlopen(req)
     return res
 
-
-video_url = input("Enter video url: ")
-
-video_id = getvideoid(video_url)
-meta_url = getmetaurl(video_id)
-
-
-fronted_url = FrontedURL(meta_url)
-res = openFrontedURL(fronted_url)
-
-b = res.read()
-s = b.decode("utf-8")
+def unpackmetaresponse(res):
+    b = res.read()
+    s = b.decode("utf-8")
+    j = up.parse_qs(s)
+    j_stream_map = up.parse_qs(j["url_encoded_fmt_stream_map"][0])
+    return j_stream_map
+    
 
 
-j = up.parse_qs(s)
-j2 = up.parse_qs(j["url_encoded_fmt_stream_map"][0])
+if __name__ == "__main__":
+    video_url = input("Enter video url: ")
 
-print(j2["url"])
-print(j2["quality"])
-print(j2["type"])
-
+    video_id = getvideoid(video_url)
+    meta_url = getmetaurl(video_id)
 
 
-#AUTOMATICALLY USES FIRST URL
-req2 = ur.Request(j2["url"][0],headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
+    fronted_url = FrontedURL(meta_url)
+    res = openFrontedURL(fronted_url)
 
-res2 = ur.urlopen(req2)
+    j_stream_map = unpackmetaresponse(res)
 
-filename = savedir_full+"/youtubedltmp"
+    print(j_stream_map["url"])
+    print(j_stream_map["quality"])
+    print(j_stream_map["type"])
 
-CHUNK = 16*1024
-with open(filename,"wb") as f:
-    while True:
-        chunk = res2.read(CHUNK)
-        if not chunk: break
-        f.write(chunk)
+
+
+    #AUTOMATICALLY USES FIRST URL
+    req2 = ur.Request(j_stream_map["url"][0],headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
+
+    res2 = ur.urlopen(req2)
+
+    savedir_full = os.path.expanduser(savedir)
+    filename = savedir_full+"/youtubedltmp"
+
+    CHUNK = 16*1024
+    with open(filename,"wb") as f:
+        while True:
+            chunk = res2.read(CHUNK)
+            if not chunk: break
+            f.write(chunk)
 
 
 
