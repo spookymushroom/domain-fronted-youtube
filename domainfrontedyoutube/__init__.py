@@ -55,8 +55,21 @@ def unpackmetaresponse(res):
     j = up.parse_qs(s)
     j_stream_map = up.parse_qs(j["url_encoded_fmt_stream_map"][0])
     return j_stream_map
-    
 
+def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
+    '''Video id required to set Referrer header'''
+    req = ur.Request(j_stream_map["url"][0],headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
+    res = ur.urlopen(req)
+    savedir_full = os.path.expanduser(savedir)
+    filename = savedir_full+"/youtubedltmp"
+    
+    with open(filename,"wb") as f:
+        while True:
+            chunk = res.read(CHUNK)
+            if not chunk: break
+            f.write(chunk)
+
+    
 
 if __name__ == "__main__":
     video_url = input("Enter video url: ")
@@ -70,26 +83,11 @@ if __name__ == "__main__":
 
     j_stream_map = unpackmetaresponse(res)
 
-    print(j_stream_map["url"])
-    print(j_stream_map["quality"])
-    print(j_stream_map["type"])
+#    print(j_stream_map["url"])
+#    print(j_stream_map["quality"])
+#    print(j_stream_map["type"])
 
-
-
-    #AUTOMATICALLY USES FIRST URL
-    req2 = ur.Request(j_stream_map["url"][0],headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
-
-    res2 = ur.urlopen(req2)
-
-    savedir_full = os.path.expanduser(savedir)
-    filename = savedir_full+"/youtubedltmp"
-
-    CHUNK = 16*1024
-    with open(filename,"wb") as f:
-        while True:
-            chunk = res2.read(CHUNK)
-            if not chunk: break
-            f.write(chunk)
+    downloadvideo(j_stream_map,video_id,savedir)
 
 
 
