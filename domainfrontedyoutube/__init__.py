@@ -6,7 +6,7 @@ import os
 
 savedir = "~/Videos"
 
-
+debug = True
 
 globalheaders = {"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0"}
 headers = {"Host":"www.youtube.com"}
@@ -58,7 +58,12 @@ def unpackmetaresponse(res):
 
 def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
     '''Video id required to set Referrer header'''
-    req = ur.Request(j_stream_map["url"][0],headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
+    global debug
+    video_url = "https://www.youtube.com/watch?v=" + video_id
+    if debug: 
+        print("Opening:",j_stream_map["url"][0].split(";")[0])
+        print("Setting referer to:",video_url)
+    req = ur.Request(j_stream_map["url"][0].split(";")[0],headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
     res = ur.urlopen(req)
     savedir_full = os.path.expanduser(savedir)
     filename = savedir_full+"/youtubedltmp"
@@ -72,9 +77,9 @@ def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
     
 
 if __name__ == "__main__":
-    video_url = input("Enter video url: ")
+    video_url_input = input("Enter video url: ")
 
-    video_id = getvideoid(video_url)
+    video_id = getvideoid(video_url_input)
     meta_url = getmetaurl(video_id)
 
 
