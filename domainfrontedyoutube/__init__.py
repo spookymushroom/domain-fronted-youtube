@@ -9,9 +9,6 @@ savedir = "~/Videos"
 debug = True
 
 globalheaders = {"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0"}
-headers = {"Host":"www.youtube.com"}
-headers.update(globalheaders)
-
 
 
 def getvideoid(url):
@@ -60,10 +57,11 @@ def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
     '''Video id required to set Referrer header'''
     global debug
     video_url = "https://www.youtube.com/watch?v=" + video_id
+    download_url = j_stream_map["url"][0].split(";")[0]
     if debug: 
-        print("Opening:",j_stream_map["url"][0].split(";")[0])
+        print("Opening:",download_url)
         print("Setting referer to:",video_url)
-    req = ur.Request(j_stream_map["url"][0].split(";")[0],headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
+    req = ur.Request(download_url,headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
     res = ur.urlopen(req)
     savedir_full = os.path.expanduser(savedir)
     filename = savedir_full+"/youtubedltmp"
@@ -74,7 +72,7 @@ def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
             if not chunk: break
             f.write(chunk)
 
-    
+
 
 if __name__ == "__main__":
     video_url_input = input("Enter video url: ")
