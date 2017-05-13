@@ -4,20 +4,23 @@ import urllib.parse as up
 import html.parser
 import os
 
-savedir = "~/Videos"
 
+#These are global variables within this file
 debug = True
-
 globalheaders = {"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0"}
 
 
 def getvideoid(url):
+    global debug
     parsed_url = up.urlparse(url)
+    if not parsed_url.scheme: parsed_url = up.urlparse("https://"+url)
     if parsed_url.netloc == "youtu.be":
-        return parsed_url.path.strip("/")
+        video_id = parsed_url.path.strip("/")
     elif parsed_url.netloc == "youtube.com" or parsed_url.netloc == "www.youtube.com":
         q = up.parse_qs(parsed_url.query)
-        return q["v"][0]
+        video_id = q["v"][0]
+    if debug: print("Got video id:",video_id)
+    return video_id
 
 def getmetaurl(video_id):
     return "https://www.youtube.com/get_video_info?video_id={}".format(video_id)
@@ -56,16 +59,30 @@ def unpackmetaresponse(res):
 def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
     '''Video id required to set Referrer header'''
     global debug
+    global globalheaders
+
     video_url = "https://www.youtube.com/watch?v=" + video_id
-    download_url = j_stream_map["url"][0].split(";")[0]
+    download_url = j_stream_map["url"][0].partition(";")[0].partition(",")[0]
     if debug: 
         print("Opening:",download_url)
-        print("Setting referer to:",video_url)
-    req = ur.Request(download_url,headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0","Origin":"https://www.youtube.com","Referer":video_url})
+        print("Referer is set to:",video_url)
+
+    headers = {"Origin":"https://www.youtube.com","Referer":video_url}
+    headers.update(globalheaders)
+    req = ur.Request(download_url,headers=headers)
     res = ur.urlopen(req)
+    if debug: 
+        try:
+            length_b = int(res.headers.get("Content-Length"))
+            length_mb = length_b/1048576
+            length_mb_rounded = round(length_mb)
+            print("Downloading ",length_mb_rounded,"MB",sep="")
+        except ValueError or KeyError: pass
+
     savedir_full = os.path.expanduser(savedir)
     filename = savedir_full+"/youtubedltmp"
-    
+    if debug: print("Downloaded file can be found at:",filename)
+
     with open(filename,"wb") as f:
         while True:
             chunk = res.read(CHUNK)
@@ -73,8 +90,23 @@ def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
             f.write(chunk)
 
 
+def downloadfromlink(link,savedir="~/Videos"):
+    '''The main wrapper for everything, accepts shortlinks'''
+
+    video_id = getvideoid(link)
+    meta_url = getmetaurl(video_id)
+
+    fronted_url = FrontedURL(meta_url)
+    res = openFrontedURL(fronted_url)
+
+    j_stream_map = unpackmetaresponse(res)
+    downloadvideo(j_stream_map,video_id,savedir)
+
 
 if __name__ == "__main__":
+    #Interactive downloader, downloads to ~/Videos/youtubedltmp
+
+    savedir = "~/Videos"
     video_url_input = input("Enter video url: ")
 
     video_id = getvideoid(video_url_input)
@@ -85,11 +117,6 @@ if __name__ == "__main__":
     res = openFrontedURL(fronted_url)
 
     j_stream_map = unpackmetaresponse(res)
-
-#    print(j_stream_map["url"])
-#    print(j_stream_map["quality"])
-#    print(j_stream_map["type"])
-
     downloadvideo(j_stream_map,video_id,savedir)
 
 
