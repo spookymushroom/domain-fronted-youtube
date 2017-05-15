@@ -11,6 +11,7 @@ globalheaders = {"User-Agent":"Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100
 
 
 def getvideoid(url):
+    '''Parses youtube url, returns video id'''
     global debug
     parsed_url = up.urlparse(url)
     if not parsed_url.scheme: parsed_url = up.urlparse("https://"+url)
@@ -42,6 +43,7 @@ class FrontedURL:
     headers = {}
 
 def openFrontedURL(fronted_url):
+    '''Takes FrontedUrl, returns response'''
     global globalheaders
     headers = fronted_url.headers
     headers.update(globalheaders)
@@ -50,6 +52,7 @@ def openFrontedURL(fronted_url):
     return res
 
 def unpackmetaresponse(res):
+    '''Takes get_video_info response, returns url_encoded_fmt_stream_map'''
     b = res.read()
     s = b.decode("utf-8")
     j = up.parse_qs(s)
@@ -57,7 +60,8 @@ def unpackmetaresponse(res):
     return j_stream_map
 
 def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
-    '''Video id required to set Referrer header'''
+    '''Takes stream map (and video id), saves video to savedir/youtubedltmp'''
+    #Video id is required to set referer header
     global debug
     global globalheaders
 
@@ -118,6 +122,22 @@ if __name__ == "__main__":
 
     j_stream_map = unpackmetaresponse(res)
     downloadvideo(j_stream_map,video_id,savedir)
+
+
+class SearchParser(html.parser.HTMLParser):
+    inside_title = False
+    results = []
+    def handle_starttag(self,tag,attrs):
+        attrs_dict = dict(attrs)
+        if attrs_dict.get("class") and attrs_dict["class"].strip() == "yt-lockup-title":
+            self.inside_title = True
+        if self.inside_title and tag == "a":
+            self.results.append([attrs_dict.get("title"),attrs_dict["href"]])
+    def handle_endtag(self,tag):
+        if self.inside_title and tag == "h3": self.inside_title = False
+
+def searchyoutube():
+    pass
 
 
 
