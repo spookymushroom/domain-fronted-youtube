@@ -14,7 +14,7 @@ It currently supports limited search functionality and the ability to download v
 This program can either be called directly from the command line with:
 
 ```python
-  python3 domainfrontedyoutube/\_\_init\_\_.py
+  python3 domainfrontedyoutube/__init__.py
 ```
 
 Or used as a module with:
@@ -24,7 +24,7 @@ Or used as a module with:
   domainfrontedyoutube.downloadfromlink(link)
 ```
 
-Search functionality is only availible when importing it as a module. One can search for a video using:
+Search functionality is only availible when importing it as a module. Video search is done with:
 
 ```python
   domainfrontedyoutube.searchyoutube(query)
