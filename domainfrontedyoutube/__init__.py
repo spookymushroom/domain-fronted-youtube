@@ -20,7 +20,7 @@ def getvideoid(url):
     elif parsed_url.netloc == "youtube.com" or parsed_url.netloc == "www.youtube.com":
         q = up.parse_qs(parsed_url.query)
         video_id = q["v"][0]
-    if debug: print("Got video id:",video_id)
+    if debug: print("[getvideoid] Got video id:",video_id)
     return video_id
 
 def getmetaurl(video_id):
@@ -45,8 +45,12 @@ class FrontedURL:
 def openFrontedURL(fronted_url):
     '''Takes FrontedUrl, returns response'''
     global globalheaders
+    global debug
     headers = fronted_url.headers
     headers.update(globalheaders)
+    if debug: 
+        print("[openFrontedURL] Opening:",fronted_url.url)
+        print("[openFrontedURL] Headers:",headers)
     req = ur.Request(fronted_url.url,headers=headers)
     res = ur.urlopen(req)
     return res
@@ -67,25 +71,36 @@ def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
 
     video_url = "https://www.youtube.com/watch?v=" + video_id
     download_url = j_stream_map["url"][0].partition(";")[0].partition(",")[0]
+   
     if debug: 
-        print("Opening:",download_url)
-        print("Referer is set to:",video_url)
+        print("[downloadvideo] Opening:",download_url)
+        print("[downloadvideo] Referer is set to:",video_url)
 
-    headers = {"Origin":"https://www.youtube.com","Referer":video_url}
-    headers.update(globalheaders)
-    req = ur.Request(download_url,headers=headers)
-    res = ur.urlopen(req)
+    # Downloading from googlevideo with domain fronting DOES NOT WORK
+    # it returns an error 404 if accessed through another domain
+    # however, most filters do not inspect *.googlevideo.com, so this is fine
+    fronted_dl = False
+    if fronted_dl:
+        fronted_url = FrontedURL(download_url)
+        fronted_url.headers.update({"Origin":"https://www.youtube.com","Referer":video_url})
+        res = openFrontedURL(fronted_url)
+    else:
+        headers = {"Origin":"https://www.youtube.com","Referer":video_url}
+        headers.update(globalheaders)
+        req = ur.Request(download_url,headers=headers)
+        res = ur.urlopen(req)
+
     if debug: 
         try:
             length_b = int(res.headers.get("Content-Length"))
             length_mb = length_b/1048576
             length_mb_rounded = round(length_mb)
-            print("Downloading ",length_mb_rounded,"MB",sep="")
+            print("[downloadvideo] Downloading ",length_mb_rounded,"MB",sep="")
         except ValueError or KeyError: pass
 
     savedir_full = os.path.expanduser(savedir)
     filename = savedir_full+"/youtubedltmp"
-    if debug: print("Downloaded file can be found at:",filename)
+    if debug: print("[downloadvideo] Downloaded file can be found at:",filename)
 
     with open(filename,"wb") as f:
         while True:
@@ -126,18 +141,40 @@ if __name__ == "__main__":
 
 class SearchParser(html.parser.HTMLParser):
     inside_title = False
+    inside_username = False
     results = []
+
+    def __init__(self):
+        self.inside_title = False
+        self.inside_username = False
+        self.results = []
+        super().__init__()
+
     def handle_starttag(self,tag,attrs):
         attrs_dict = dict(attrs)
-        if attrs_dict.get("class") and attrs_dict["class"].strip() == "yt-lockup-title":
+        if tag == "h3" and attrs_dict.get("class") and attrs_dict["class"].strip() == "yt-lockup-title":
             self.inside_title = True
         if self.inside_title and tag == "a":
             self.results.append([attrs_dict.get("title"),attrs_dict["href"]])
+        if tag == "div" and attrs_dict.get("class") and attrs_dict["class"].strip() == "yt-lockup-byline":
+            self.inside_username = True
+        if self.inside_username and tag == "a":
+            self.results[-1].append(attrs_dict["href"])
+
     def handle_endtag(self,tag):
         if self.inside_title and tag == "h3": self.inside_title = False
+        if self.inside_username and tag == "div": self.inside_username = False
 
-def searchyoutube():
-    pass
+    def handle_data(self,data):
+        if self.inside_username: self.results[-1].append(data)
 
-
+def searchyoutube(query):
+    query_url = "https://www.youtube.com/results?search_query="+"+".join(query.split())
+    fronted_query_url = FrontedURL(query_url)
+    res = openFrontedURL(fronted_query_url)
+    b = res.read()
+    s = b.decode("utf-8")
+    parser = SearchParser()
+    parser.feed(s)
+    return parser.results
 
