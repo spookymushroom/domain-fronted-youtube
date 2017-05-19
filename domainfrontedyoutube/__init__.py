@@ -155,18 +155,19 @@ class SearchParser(html.parser.HTMLParser):
         if tag == "h3" and attrs_dict.get("class") and attrs_dict["class"].strip() == "yt-lockup-title":
             self.inside_title = True
         if self.inside_title and tag == "a":
-            self.results.append([attrs_dict.get("title"),attrs_dict["href"]])
+            self.results.append({"title":attrs_dict.get("title"),"url":attrs_dict["href"],"is_video":False})
         if tag == "div" and attrs_dict.get("class") and attrs_dict["class"].strip() == "yt-lockup-byline":
             self.inside_username = True
         if self.inside_username and tag == "a":
-            self.results[-1].append(attrs_dict["href"])
+            self.results[-1]["channel_url"] = attrs_dict["href"]
+            self.results[-1]["is_video"] = True
 
     def handle_endtag(self,tag):
         if self.inside_title and tag == "h3": self.inside_title = False
         if self.inside_username and tag == "div": self.inside_username = False
 
     def handle_data(self,data):
-        if self.inside_username: self.results[-1].append(data)
+        if self.inside_username: self.results[-1]["channel_name"] = data
 
 def searchyoutube(query):
     query_url = "https://www.youtube.com/results?search_query="+"+".join(query.split())
