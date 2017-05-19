@@ -13,7 +13,7 @@ It currently supports limited search functionality and the ability to download v
 
 This program can either be called directly from the command line with:
 
-```python
+```bash
   python3 domainfrontedyoutube/__init__.py
 ```
 
