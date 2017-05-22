@@ -36,8 +36,6 @@ When using the script as a module, video (and channel) search is done with:
   domainfrontedyoutube.searchyoutube(query)
 ```
 
-which returns a json object with the results.
-
 The old interactive prompt is still accessible with: 
 
 ```
