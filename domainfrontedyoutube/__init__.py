@@ -48,7 +48,7 @@ def openFrontedURL(fronted_url):
     global debug
     headers = fronted_url.headers
     headers.update(globalheaders)
-    if debug: 
+    if debug:
         print("[openFrontedURL] Opening:",fronted_url.url)
         print("[openFrontedURL] Headers:",headers)
     req = ur.Request(fronted_url.url,headers=headers)
@@ -71,8 +71,8 @@ def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
 
     video_url = "https://www.youtube.com/watch?v=" + video_id
     download_url = j_stream_map["url"][0].partition(";")[0].partition(",")[0]
-   
-    if debug: 
+
+    if debug:
         print("[downloadvideo] Opening:",download_url)
         print("[downloadvideo] Referer is set to:",video_url)
 
@@ -90,7 +90,7 @@ def downloadvideo(j_stream_map,video_id,savedir,CHUNK=16*1024):
         req = ur.Request(download_url,headers=headers)
         res = ur.urlopen(req)
 
-    if debug: 
+    if debug:
         try:
             length_b = int(res.headers.get("Content-Length"))
             length_mb = length_b/1048576
@@ -122,7 +122,9 @@ def downloadfromlink(link,savedir="~/Videos"):
     downloadvideo(j_stream_map,video_id,savedir)
 
 
-if __name__ == "__main__":
+def legacydownloader():
+    '''The old downloader which can still be run by executing __init__.py directly'''
+    '''Alternatively use the ld command in the interactive __main__.py to run this function'''
     #Interactive downloader, downloads to ~/Videos/youtubedltmp
 
     savedir = "~/Videos"
@@ -138,6 +140,8 @@ if __name__ == "__main__":
     j_stream_map = unpackmetaresponse(res)
     downloadvideo(j_stream_map,video_id,savedir)
 
+if __name__ == '__main__':
+    legacydownloader()
 
 class SearchParser(html.parser.HTMLParser):
     inside_title = False
@@ -170,7 +174,7 @@ class SearchParser(html.parser.HTMLParser):
         if self.inside_username: self.results[-1]["channel_name"] = data
 
 def searchyoutube(query):
-    query_url = "https://www.youtube.com/results?search_query="+"+".join(query.split())
+    query_url = "https://www.youtube.com/results?search_query="+up.quote("+".join(query.split()))
     fronted_query_url = FrontedURL(query_url)
     res = openFrontedURL(fronted_query_url)
     b = res.read()
