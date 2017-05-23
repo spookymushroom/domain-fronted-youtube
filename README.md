@@ -46,6 +46,6 @@ But it is now also accessible via the `ld` command in interactive mode.
 
 ## Limitations
 
-Youtube marks certain videos, specifically those containing copyrighted material, as undownloadable. Attempting to download such a video will cause the downloader to throw an error about the nonexistence of a certain "url\_encoded\_fmt\_stream\_map." It might be possible to bypass this limitation by grabbing the youtube page and parsing for information about the video rather than asking for www.youtube.com/get\_video\_info?video\_id={}.
+Youtube marks certain videos, specifically those containing copyrighted material, as undownloadable. Attempting to download such a video will cause the downloader to throw an error about the nonexistence of a certain "url\_encoded\_fmt\_stream\_map." It might be possible to bypass this limitation by grabbing the youtube page and parsing for information about the video rather than asking for www.youtube.com/get_video_info?video_id={}.
 
 If you have a concrete suggestion about improving the code, feel free to open an issue.
